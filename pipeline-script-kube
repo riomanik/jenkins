@@ -1,0 +1,46 @@
+def dockerTag = "edwardsuwirya/kampret:kosongan1.1"
+def podConfig = "pod-kosongan.yml"
+def repo = "https://github.com/edwardsuwirya/kosongan.git"
+def branch = "*/versi2"
+
+pipeline {
+    agent any
+    stages {
+        stage('checkout'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: branch]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: repo]]])
+            }
+        }
+        stage('maven build') {
+            steps {
+                sh "${env.M2_HOME}/bin/mvn clean package"
+            }
+        }
+        stage('docker build'){
+            steps{
+                   sh """
+                    ${env.DOCKER_HOME}/docker build -t ${dockerTag} .
+                   """
+                }
+        }
+        stage('docker push'){
+            steps{
+                withCredentials([string(credentialsId: 'dockerhub-user', variable: 'DOCKERUSER'),string(credentialsId: 'dockerhub-passwd', variable: 'DOCKERPASSWD')]) {
+                   sh """
+                   ${env.DOCKER_HOME}/docker login -u $DOCKERUSER -p $DOCKERPASSWD
+                   ${env.DOCKER_HOME}/docker push ${dockerTag}
+                   """
+                }
+            }
+        }
+        stage('kubernetes'){
+            steps{
+                withCredentials([kubeconfigContent(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_CONTENT')]) {
+                    sh """
+                      kubectl --kubeconfig="$KUBECONFIG_CONTENT" apply -f ${podConfig}
+                      """
+                }
+            }
+        }
+    }
+}

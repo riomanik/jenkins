@@ -1,0 +1,36 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: example
+spec:
+  type: LoadBalancer
+  selector:
+    app: example
+  ports:
+    - name: http
+      protocol: TCP
+      port: 3007
+      targetPort: example-port
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: example
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+      - name: example
+        image: 06061999/riomanik:front-end1.0
+        ports:
+        - name: example-port
+          containerPort: 80
+          protocol: TCP

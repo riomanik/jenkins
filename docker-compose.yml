@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  front-end-docker:
+    image: 06061999/riomanik:front-end1.0
+    build:
+      context: ./
+      dockerfile: dockerfile
+    ports:
+      - "3010:80"
+    restart: always
